@@ -45,7 +45,7 @@ fn main() {
         Ok(records) => {
             println!["Parsed {} records:", records.len()];
             for (header, record) in records.into_iter() {
-                print!["{:6} {:8}", header.pid, header.command];
+                print!["{:6} {:8} ", header.pid, header.command];
 
                 match record {
                     Ok(ref rec) => println!["{}", rec],

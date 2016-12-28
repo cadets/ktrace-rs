@@ -1,8 +1,12 @@
 [package]
 name = "ktrace"
 version = "0.0.1"
+description = "A library for parsing FreeBSD ktrace records"
 authors = ["Jonathan Anderson <jonathan.anderson@mun.ca>"]
 license = "MIT OR Apache-2.0"
+
+repository = "https://github.com/cadets/ktrace-rs"
+readme = "README.md"
 
 [dependencies]
 clap = "2.19.2"

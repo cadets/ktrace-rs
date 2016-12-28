@@ -15,7 +15,7 @@ extern crate libc;
 extern crate nix;
 
 use std::ffi::CStr;
-use std::{fmt,io};
+use std::fmt;
 use std::mem::transmute;
 use ::Error;
 
@@ -26,7 +26,7 @@ const MAXCOMLEN: usize = 19;
 #[derive(Clone, Debug)]
 pub struct Header {
     pub length: usize,
-    ty: RecordType,
+    pub record_type: RecordType,
     pub pid: u32,
     pub command: String,
     pub timestamp: nix::sys::time::TimeVal,
@@ -44,10 +44,7 @@ struct RawHeader {
 }
 
 impl Header {
-    pub fn parse(input: &mut io::Read) -> Result<Header, Error> {
-        let mut buffer = [ 0; 56 ];
-        try![input.read_exact(&mut buffer).map_err(Error::IO)];
-
+    pub fn parse(buffer: &[u8;56]) -> Result<Header, Error> {
         let raw = unsafe { transmute::<&[u8; 56],&RawHeader>(&buffer)};
 
         let command = unsafe { CStr::from_ptr(&raw.ktr_comm as *const i8) }
@@ -57,7 +54,7 @@ impl Header {
 
         Ok(Header{
             length: raw.ktr_len as usize,
-            ty: try![RecordType::from_u16(raw.ktr_type)],
+            record_type: try![RecordType::from_u16(raw.ktr_type)],
             pid: raw.ktr_pid as u32,
             command: try![command].to_string(),
             timestamp: nix::sys::time::TimeVal{
@@ -72,7 +69,7 @@ impl Header {
 impl fmt::Display for Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write![f, "{} (PID {}, TID {}, command {}, len {})",
-               self.ty, self.pid, self.tid, self.command, self.length]
+               self.record_type, self.pid, self.tid, self.command, self.length]
     }
 }
 

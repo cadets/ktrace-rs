@@ -11,9 +11,11 @@
 // at your option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+extern crate byteorder;
 extern crate clap;
 extern crate ktrace;
 
+use byteorder::NativeEndian;
 use ktrace::Error;
 use std::fs::File;
 
@@ -31,7 +33,7 @@ fn main() {
     let parsed = args.value_of("INPUT")
         .ok_or(Error::msg("missing required argument"))
         .and_then(|name| File::open(name).map_err(Error::IO))
-        .and_then(|mut file| ktrace::parse(&mut file))
+        .and_then(|mut file| ktrace::parse::<NativeEndian>(&mut file))
         ;
 
     match parsed {
@@ -42,9 +44,13 @@ fn main() {
 
         Ok(records) => {
             println!["Parsed {} records:", records.len()];
-
             while let Some(&(ref header, ref record)) = records.iter().next() {
-                println!["{:6} {:8}", header.pid, header.command];
+                print!["{:6} {:8}", header.pid, header.command];
+
+                match record {
+                    &Ok(ref rec) => println!["{}", rec],
+                    &Err(ref e) => println!["<error: {}>", e],
+                };
             }
         },
     }

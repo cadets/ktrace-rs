@@ -11,13 +11,14 @@
 // at your option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use ::std::{fmt,io};
+use ::std::{fmt,io,string};
 
 
 pub enum Error {
     BadValue{ expected: String, got: String },
     IO(io::Error),
     Message(String),
+    UTF8(string::FromUtf8Error),
 }
 
 impl Error {
@@ -50,6 +51,10 @@ impl fmt::Display for Error {
 
             &Error::Message(ref message) => {
                 write![f, "{}", message]
+            },
+
+            &Error::UTF8(ref e) => {
+                write![f, "UTF8 error: {}", e]
             },
         }
     }

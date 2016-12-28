@@ -11,6 +11,8 @@
 // at your option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+extern crate byteorder;
+
 mod error;
 mod header;
 mod record;
@@ -20,24 +22,34 @@ pub use header::*;
 pub use record::*;
 
 use std::io;
+use std::io::ErrorKind::UnexpectedEof;
+
+type Result<T> = std::result::Result<T, self::Error>;
 
 
-pub fn parse(mut input: &mut io::Read) -> Result<Vec<(Header,Record)>, Error> {
+pub fn parse<E>(mut r: &mut io::Read) -> Result<Vec<(Header,Result<Record>)>>
+    where E: byteorder::ByteOrder
+{
     let mut v = Vec::new();
 
     loop {
-        let header = match Header::parse(&mut input) {
-            Err(Error::IO(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
+        let mut data = [0; 56];
+        match r.read_exact(&mut data) {
+            Err(ref e) if e.kind() == UnexpectedEof => {
                 break;
             },
 
-            h => try![h],
+            Err(e) => { return Err(Error::IO(e)); },
+            Ok(()) => {},
         };
 
-        let mut data = vec![0; header.length];
-        try![input.read_exact(&mut data).map_err(Error::IO)];
+        let header = try![Header::parse(&data)];
 
-        v.push((header, Record::PageFault));  // TODO: parse record data!
+        let mut data = vec![0; header.length];
+        try![r.read_exact(&mut data).map_err(Error::IO)];
+        let record = Record::parse::<E>(&data, &header.record_type);
+
+        v.push((header, record));
     }
 
     Ok(v)

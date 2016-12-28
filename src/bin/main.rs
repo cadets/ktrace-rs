@@ -44,12 +44,12 @@ fn main() {
 
         Ok(records) => {
             println!["Parsed {} records:", records.len()];
-            while let Some(&(ref header, ref record)) = records.iter().next() {
+            for (header, record) in records.into_iter() {
                 print!["{:6} {:8}", header.pid, header.command];
 
                 match record {
-                    &Ok(ref rec) => println!["{}", rec],
-                    &Err(ref e) => println!["<error: {}>", e],
+                    Ok(ref rec) => println!["{}", rec],
+                    Err(ref e) => println!["<error: {}>", e],
                 };
             }
         },

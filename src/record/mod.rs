@@ -362,7 +362,8 @@ impl fmt::Display for Record {
 
             &Record::SystemCall{number, ref args} => {
                 write![f, "CALL  {}({})",
-                    number,
+                    syscalls::name(number as usize)
+                             .unwrap_or(format!["<<bad syscall: {}>>", number]),
                     args.iter()
                         .map(|x| format!["0x{:x}", x])
                         .collect::<Vec<_>>()
@@ -371,7 +372,11 @@ impl fmt::Display for Record {
             },
 
             &Record::SystemCallReturn{code, retval, ..} => {
-                write![f, "RET   {} {}", code, retval]
+                write![f, "RET   {} {}",
+                    syscalls::name(code as usize)
+                             .unwrap_or(format!["<<bad syscall: {}>>", code]),
+                    retval
+                ]
             },
 
             &Record::Namei(ref name) => {
@@ -402,7 +407,7 @@ impl fmt::Display for Record {
             },
 
             &Record::UserData(ref data) => {
-                write![f, "UTRACE {:?}", data]
+                write![f, "USER  {:?}", data]
             },
 
             &Record::Struct{ref name, ..} => {
@@ -436,3 +441,5 @@ impl fmt::Display for Record {
         }
     }
 }
+
+mod syscalls;

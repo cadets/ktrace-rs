@@ -166,13 +166,10 @@ impl Record {
                             format!["{} B: {:?}", arg_data.len(), &arg_data]));
                 }
 
-                // TODO: find a more idiomatic way of doing this, probably
-                //       with some sort of iterator adapter
-                let mut args = Vec::new();
-                for i in 0..num_args {
-                    let start = 8 * i as usize;
-                    args.push(E::read_u64(&arg_data[start..start+8]));
-                }
+                let args = arg_data.chunks(8)
+                                   .map(|chunk| E::read_u64(chunk))
+                                   .collect::<Vec<_>>()
+                                   ;
 
                 Ok(Record::SystemCall {
                     number: code,

@@ -9,6 +9,7 @@ repository = "https://github.com/cadets/ktrace-rs"
 readme = "README.md"
 
 [dependencies]
+bit-vec = "0.4.3"
 byteorder = "0.5.3"
 clap = "2.19.2"
 libc = "0.2.18"

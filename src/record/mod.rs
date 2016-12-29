@@ -82,11 +82,7 @@ pub enum Record {
     ProcessDestruction,
 
     /// KTR_CAPFAIL - trace capability check failure
-    CapabilityFailure {
-        fail_type: CapabilityFailureType,
-        rights_needed: CapabilityRights,
-        rights_held: CapabilityRights,
-    },
+    CapabilityFailure(capfail::CapFail),
 
     /// KTR_FAULT - page fault record
     PageFault {
@@ -99,39 +95,6 @@ pub enum Record {
         result: u32,
     },
 }
-
-/// Ways that capability-aware operations can fail
-#[derive(Clone,Debug)]
-pub enum CapabilityFailureType {
-    /// insufficient capabilities in cap_check()
-    NotCapable,
-
-    /// attempt to increase capabilities
-    Increase,
-
-    /// disallowed system call
-    Syscall,
-
-    /// disallowed VFS lookup
-    Lookup,
-}
-
-impl CapabilityFailureType {
-    fn from(value: u32) -> Result<CapabilityFailureType> {
-        match value {
-            0 => Ok(CapabilityFailureType::NotCapable),
-            1 => Ok(CapabilityFailureType::NotCapable),
-            2 => Ok(CapabilityFailureType::NotCapable),
-            3 => Ok(CapabilityFailureType::NotCapable),
-            x => Err(Error::bad_value(
-                    "ktr_cap_fail_type (integer 0-3)", x.to_string()))
-        }
-    }
-}
-
-/// Rights that are (or can be) associated with a capability
-#[derive(Clone,Debug)]
-pub struct CapabilityRights;
 
 /// Directions that I/O can take place in
 #[derive(Clone,Debug)]
@@ -297,28 +260,8 @@ impl Record {
             },
 
             &RecordType::CapabilityFailure => {
-                if data.len() < 20 {
-                    return Err(Error::bad_value(
-                        "enum ktr_cap_fail_type + two cap_rights_t",
-                        format!["{} B: {:?}", data.len(), data]
-                    ));
-                }
-
-                let fail_type = try! {
-                    CapabilityFailureType::from(E::read_u32(&data[0..4]))
-                };
-
-                // TODO: actually parse struct cap_rights:
-                /*
-                let cap_rights_size = (data.len() - 4) / 2;
-                let cap_rights_version = cap_rights_size / 8 - 2;
-                */
-
-                Ok(Record::CapabilityFailure {
-                    fail_type: fail_type,
-                    rights_needed: CapabilityRights,
-                    rights_held: CapabilityRights,
-                })
+                let failure = capfail::CapFail::parse::<E>(data);
+                failure.map(Record::CapabilityFailure)
             },
 
             &RecordType::PageFault => {
@@ -423,9 +366,8 @@ impl fmt::Display for Record {
                 write![f, "PDEST"]
             },
 
-            &Record::CapabilityFailure{ref fail_type, ..} => {
-                // TODO: describe rights held and needed
-                write![f, "CAPF  {:?}", fail_type]
+            &Record::CapabilityFailure(ref fail) => {
+                write![f, "CAP   {}", fail]
             },
 
             &Record::PageFault{virtual_address, fault_type} => {
@@ -439,4 +381,5 @@ impl fmt::Display for Record {
     }
 }
 
+mod capfail;
 mod syscalls;

@@ -372,7 +372,7 @@ impl fmt::Display for Record {
             },
 
             &Record::SystemCallReturn{code, retval, ..} => {
-                write![f, "RET   {} {}",
+                write![f, "RET   {} 0x{:x}",
                     syscalls::name(code as usize)
                              .unwrap_or(format!["<<bad syscall: {}>>", code]),
                     retval
